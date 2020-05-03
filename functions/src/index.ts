@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import * as express from "express";
+import * as pino from "express-pino-logger";
 import { toRequestHandler } from "hyper-ts/lib/express";
+
 import {
   getCreaturesHandler,
   getCreatureByIdHandler,
@@ -13,12 +15,15 @@ import {
  * Initialize
  */
 const app = express();
+const logger = pino();
+
+app.use(logger);
 
 app
-  .get("/", toRequestHandler(getCreaturesHandler))
-  .get("/:id", toRequestHandler(getCreatureByIdHandler))
-  .post("/", toRequestHandler(postCreatureHandler))
-  .put("/:id", toRequestHandler(putCreatureHanndler))
-  .delete("/:id", toRequestHandler(deleteCreatureHandler));
+  .get("/creatures", toRequestHandler(getCreaturesHandler))
+  .get("/creatures/:id", toRequestHandler(getCreatureByIdHandler))
+  .post("/creatures", toRequestHandler(postCreatureHandler))
+  .put("/creatures/:id", toRequestHandler(putCreatureHanndler))
+  .delete("/creatures/:id", toRequestHandler(deleteCreatureHandler));
 
-export const creatures = functions.https.onRequest(app);
+export const api = functions.https.onRequest(app);

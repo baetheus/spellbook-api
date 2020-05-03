@@ -5,7 +5,7 @@ import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { pipe } from "fp-ts/lib/pipeable";
 
-import { Errors, Err } from "./errors";
+import { Errors, Err, sendError } from "./errors";
 import { Creature, CreatureWithId, CreaturesWithIds } from "./validators";
 import { Firedata } from "./types";
 
@@ -39,17 +39,21 @@ const hasId = pipe(
 /**
  * Send JSON
  */
-const sendJSON = <D>(d: D): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> =>
-  pipe(
+const sendJSON = <D>(d: D): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> => {
+  console.log("Sending Response", d);
+  return pipe(
     H.status(H.Status.OK),
     H.ichain(() => H.json(d, () => Err.JSONError))
   );
-const closeOk = (): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> =>
-  pipe(
+};
+const closeOk = (): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> => {
+  console.log("Sending Ok");
+  return pipe(
     H.status(H.Status.OK),
     H.ichain(() => H.closeHeaders()),
     H.ichain(() => H.end())
   );
+};
 
 /**
  * Firebase Tasks
@@ -100,13 +104,15 @@ export const getCreaturesHandler = pipe(H.fromTaskEither(getCreatures), sendJSON
 export const getCreatureByIdHandler = pipe(
   hasId,
   H.ichain((id) => H.fromTaskEither(getCreatureById(id))),
-  H.ichain(sendJSON)
+  H.ichain((c) => sendJSON(c)),
+  H.orElse(sendError)
 );
 
 export const postCreatureHandler = pipe(
   decodeCreatureBody,
   H.ichain((creature) => H.fromTaskEither(addCreature(creature))),
-  H.ichain(sendJSON)
+  H.ichain((c) => sendJSON(c)),
+  H.orElse(sendError)
 );
 
 export const putCreatureHanndler = pipe(
@@ -117,11 +123,13 @@ export const putCreatureHanndler = pipe(
       H.ichain((creature) => H.fromTaskEither(updateCreature(id, creature)))
     )
   ),
-  H.ichain(sendJSON)
+  H.ichain((c) => sendJSON(c)),
+  H.orElse(sendError)
 );
 
 export const deleteCreatureHandler = pipe(
   hasId,
   H.ichain((id) => H.fromTaskEither(deleteCreature(id))),
-  H.ichain(closeOk)
+  H.ichain(() => closeOk()),
+  H.orElse(sendError)
 );
