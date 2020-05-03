@@ -1,19 +1,21 @@
 import { initializeApp, firestore } from "firebase-admin";
+import * as functions from "firebase-functions";
 import * as t from "io-ts";
 import * as H from "hyper-ts";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { pipe } from "fp-ts/lib/pipeable";
 
-import { Errors, Err, sendError } from "./errors";
+import { Errors, sendError } from "./errors";
 import { Creature, CreatureWithId, CreaturesWithIds } from "./validators";
 import { Firedata } from "./types";
 
 /**
  * Firestore
  */
-initializeApp();
-const db = firestore();
+const config = functions.firebaseConfig() ?? undefined; // Whoever built this is a punk
+const app = initializeApp(config);
+const db = firestore(app);
 const creatureDb = db.collection("creatures");
 
 /**
@@ -21,11 +23,11 @@ const creatureDb = db.collection("creatures");
  */
 const decodeCreatureBody = pipe(
   H.decodeBody(Creature.decode),
-  H.mapLeft(() => Err.InvalidArguments)
+  H.mapLeft(() => Errors.InvalidArguments)
 );
 const chainCreatureWithIdDecode = (data: unknown) =>
   TE.fromEither<Errors, CreatureWithId>(
-    E.mapLeft(() => Err.InvalidInternalData)(CreatureWithId.decode(data))
+    E.mapLeft(() => Errors.InvalidInternalData)(CreatureWithId.decode(data))
   );
 
 /**
@@ -33,27 +35,24 @@ const chainCreatureWithIdDecode = (data: unknown) =>
  */
 const hasId = pipe(
   H.decodeParam("id", t.string.decode),
-  H.mapLeft(() => Err.InvalidArguments)
+  H.mapLeft(() => Errors.InvalidArguments)
 );
 
 /**
  * Send JSON
  */
-const sendJSON = <D>(d: D): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> => {
-  console.log("Sending Response", d);
-  return pipe(
+export const sendJSON = <D>(d: D): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> =>
+  pipe(
     H.status(H.Status.OK),
-    H.ichain(() => H.json(d, () => Err.JSONError))
+    H.ichain(() => H.json(d, () => Errors.JSONError))
   );
-};
-const closeOk = (): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> => {
-  console.log("Sending Ok");
-  return pipe(
+
+const closeOk = (): H.Middleware<H.StatusOpen, H.ResponseEnded, Errors, void> =>
+  pipe(
     H.status(H.Status.OK),
     H.ichain(() => H.closeHeaders()),
     H.ichain(() => H.end())
   );
-};
 
 /**
  * Firebase Tasks
@@ -62,14 +61,14 @@ const getCreatures = pipe(
   TE.rightTask(() => creatureDb.get()),
   TE.map((collection) => collection.docs.map((doc) => ({ ...doc.data(), id: doc.id }))),
   TE.chain((docs) => TE.fromEither(CreaturesWithIds.decode(docs))),
-  TE.mapLeft(() => Err.InvalidInternalData)
+  TE.mapLeft(() => Errors.InvalidInternalData)
 );
 
 const getCreatureById = (id: string) =>
   pipe(
     TE.rightTask<Errors, Firedata>(() => creatureDb.doc(id).get()),
     TE.chain((snap) =>
-      snap.exists ? TE.right({ ...snap.data(), id: snap.id }) : TE.left(Err.EntityNotFound)
+      snap.exists ? TE.right({ ...snap.data(), id: snap.id }) : TE.left(Errors.EntityNotFound)
     ),
     TE.chain(chainCreatureWithIdDecode)
   );
@@ -84,7 +83,7 @@ const updateCreature = (id: string, creature: Creature) =>
   pipe(
     TE.rightTask(() => creatureDb.doc(id).get()),
     TE.chain((snap) =>
-      snap.exists ? TE.rightTask(() => snap.ref.set(creature)) : TE.left(Err.EntityNotFound)
+      snap.exists ? TE.rightTask(() => snap.ref.set(creature)) : TE.left(Errors.EntityNotFound)
     ),
     TE.chain(() => getCreatureById(id))
   );
@@ -99,19 +98,26 @@ const deleteCreature = (id: string) =>
 /**
  * Middleware
  */
-export const getCreaturesHandler = pipe(H.fromTaskEither(getCreatures), sendJSON);
+export const getCreaturesHandler = pipe(
+  H.decodeMethod(t.literal("GET").decode),
+  H.mapLeft(() => Errors.InvalidMethod),
+  H.ichain(() => H.fromTaskEither(getCreatures)),
+  H.map((creatures) => ({ creatures })),
+  H.ichain(sendJSON),
+  H.orElse(sendError)
+);
 
 export const getCreatureByIdHandler = pipe(
   hasId,
   H.ichain((id) => H.fromTaskEither(getCreatureById(id))),
-  H.ichain((c) => sendJSON(c)),
+  H.ichain(sendJSON),
   H.orElse(sendError)
 );
 
 export const postCreatureHandler = pipe(
   decodeCreatureBody,
   H.ichain((creature) => H.fromTaskEither(addCreature(creature))),
-  H.ichain((c) => sendJSON(c)),
+  H.ichain(sendJSON),
   H.orElse(sendError)
 );
 
@@ -123,7 +129,7 @@ export const putCreatureHanndler = pipe(
       H.ichain((creature) => H.fromTaskEither(updateCreature(id, creature)))
     )
   ),
-  H.ichain((c) => sendJSON(c)),
+  H.ichain(sendJSON),
   H.orElse(sendError)
 );
 

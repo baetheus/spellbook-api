@@ -15,7 +15,9 @@ import {
  * Initialize
  */
 const app = express();
-const logger = pino();
+const logger = pino({ level: "debug" });
+
+app.disable("x-powered-by");
 
 app.use(logger);
 
