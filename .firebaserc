@@ -1,5 +1,14 @@
 {
   "projects": {
-    "default": "nll-sh"
+    "api-nll-sh": "nll-sh"
+  },
+  "targets": {
+    "nll-sh": {
+      "hosting": {
+        "api-nll-sh": [
+          "api-nll-sh"
+        ]
+      }
+    }
   }
 }

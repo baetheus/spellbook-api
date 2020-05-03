@@ -8,5 +8,15 @@
       "npm --prefix \"$RESOURCE_DIR\" run lint",
       "npm --prefix \"$RESOURCE_DIR\" run build"
     ]
+  },
+  "hosting": {
+    "public": "public",
+    "target": "api-nll-sh",
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "api"
+      }
+    ]
   }
 }

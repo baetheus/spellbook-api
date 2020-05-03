@@ -12,20 +12,28 @@ import {
 } from "./routes";
 
 /**
- * Initialize
+ * Initialize App
  */
 const app = express();
 const logger = pino({ level: "debug" });
 
 app.disable("x-powered-by");
-
 app.use(logger);
 
-app
+/**
+ * Spellbook Route
+ */
+const spellbook = express.Router();
+spellbook
   .get("/creatures", toRequestHandler(getCreaturesHandler))
   .get("/creatures/:id", toRequestHandler(getCreatureByIdHandler))
   .post("/creatures", toRequestHandler(postCreatureHandler))
   .put("/creatures/:id", toRequestHandler(putCreatureHanndler))
   .delete("/creatures/:id", toRequestHandler(deleteCreatureHandler));
+
+/**
+ * Setup All Routes
+ */
+app.use("/spellbook", spellbook);
 
 export const api = functions.https.onRequest(app);
