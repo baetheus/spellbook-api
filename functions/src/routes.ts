@@ -2,6 +2,8 @@ import { initializeApp, firestore } from "firebase-admin";
 import * as functions from "firebase-functions";
 import * as t from "io-ts";
 import * as H from "hyper-ts";
+import { reporter } from "io-ts-reporters";
+
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { pipe } from "fp-ts/lib/pipeable";
@@ -28,15 +30,24 @@ const creatureDb = db.collection("creatures");
 /**
  * Decoders
  */
-const decodeNewCreatureBody = pipe(H.decodeBody(NewCreature.decode), H.mapLeft(badArgs));
-const decodeCreatureBody = pipe(H.decodeBody(Creature.decode), H.mapLeft(badArgs));
+const decodeNewCreatureBody = pipe(
+  H.decodeBody(NewCreature.decode),
+  H.mapLeft((e) => badArgs(reporter(E.left(e))))
+);
+const decodeCreatureBody = pipe(
+  H.decodeBody(Creature.decode),
+  H.mapLeft((e) => badArgs(reporter(E.left(e))))
+);
 const chainCreatureWithIdDecode = (data: unknown) =>
   TE.fromEither(E.mapLeft(badInternalData)(Creature.decode(data)));
 
 /**
  * Params
  */
-const hasId = pipe(H.decodeParam("id", t.string.decode), H.mapLeft(badArgs));
+const hasId = pipe(
+  H.decodeParam("id", t.string.decode),
+  H.mapLeft((e) => badArgs(reporter(E.left(e))))
+);
 
 /**
  * Send JSON
