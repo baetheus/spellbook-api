@@ -1,7 +1,7 @@
 import { initializeApp, firestore } from "firebase-admin";
 import * as functions from "firebase-functions";
-import * as C from "io-ts/es6/Codec";
-import { draw } from "io-ts/es6/Tree";
+import * as C from "io-ts/lib/Codec";
+import { draw } from "io-ts/lib/Tree";
 
 import * as H from "hyper-ts";
 

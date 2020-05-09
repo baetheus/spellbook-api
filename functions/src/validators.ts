@@ -1,4 +1,4 @@
-import * as C from "io-ts/es6/Codec";
+import * as C from "io-ts/lib/Codec";
 
 export const CreatureSource = C.literal(
   "Monster Manual",
