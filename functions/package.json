@@ -21,8 +21,7 @@
     "firebase-functions": "^3.6.1",
     "fp-ts": "^2.5.4",
     "hyper-ts": "^0.5.3",
-    "io-ts": "^2.2.1",
-    "io-ts-reporters": "^1.0.0"
+    "io-ts": "^2.2.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.6",

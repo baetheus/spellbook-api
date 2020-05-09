@@ -1,8 +1,9 @@
 import { initializeApp, firestore } from "firebase-admin";
 import * as functions from "firebase-functions";
-import * as t from "io-ts";
+import * as C from "io-ts/es6/Codec";
+import { draw } from "io-ts/es6/Tree";
+
 import * as H from "hyper-ts";
-import { reporter } from "io-ts-reporters";
 
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -32,11 +33,11 @@ const creatureDb = db.collection("creatures");
  */
 const decodeNewCreatureBody = pipe(
   H.decodeBody(NewCreature.decode),
-  H.mapLeft((e) => badArgs(reporter(E.left(e))))
+  H.mapLeft((e) => badArgs(draw(e)))
 );
 const decodeCreatureBody = pipe(
   H.decodeBody(Creature.decode),
-  H.mapLeft((e) => badArgs(reporter(E.left(e))))
+  H.mapLeft((e) => badArgs(draw(e)))
 );
 const chainCreatureWithIdDecode = (data: unknown) =>
   TE.fromEither(E.mapLeft(badInternalData)(Creature.decode(data)));
@@ -45,8 +46,8 @@ const chainCreatureWithIdDecode = (data: unknown) =>
  * Params
  */
 const hasId = pipe(
-  H.decodeParam("id", t.string.decode),
-  H.mapLeft((e) => badArgs(reporter(E.left(e))))
+  H.decodeParam("id", C.string.decode),
+  H.mapLeft((e) => badArgs(draw(e)))
 );
 
 /**
@@ -110,7 +111,7 @@ const deleteCreature = (id: string) =>
  * Middleware
  */
 export const getCreaturesHandler = pipe(
-  H.decodeMethod(t.literal("GET").decode),
+  H.decodeMethod(C.literal("GET").decode),
   H.mapLeft(badMethod),
   H.ichain(() => H.fromTaskEither(getCreatures)),
   H.map((creatures) => ({ creatures })),
