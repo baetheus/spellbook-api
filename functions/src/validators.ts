@@ -8,8 +8,10 @@ export const CreatureSource = t.keyof({
   Custom: null,
 });
 
-export const Creature = t.union([
+/** Creature */
+export const Creature = t.intersection([
   t.type({
+    id: t.string,
     name: t.string,
     type: t.string,
     rating: t.number,
@@ -36,16 +38,35 @@ export const Creature = t.union([
 ]);
 export type Creature = t.TypeOf<typeof Creature>;
 
-export const CreatureWithId = t.union([
-  Creature,
-  t.type({
-    id: t.string,
-  }),
-]);
-export type CreatureWithId = t.TypeOf<typeof CreatureWithId>;
-
+/** Creatures */
 export const Creatures = t.array(Creature);
 export type Creatures = t.TypeOf<typeof Creatures>;
 
-export const CreaturesWithIds = t.array(CreatureWithId);
-export type CreaturesWithIds = t.TypeOf<typeof CreaturesWithIds>;
+/** New Creature */
+export const NewCreature = t.intersection([
+  t.type({
+    ac: t.number,
+    cha: t.number,
+    con: t.number,
+    dex: t.number,
+    experience: t.number,
+    features: t.string,
+    hp: t.number,
+    int: t.number,
+    name: t.string,
+    rating: t.number,
+    source: CreatureSource,
+    speed: t.string,
+    str: t.number,
+    traits: t.string,
+    type: t.string,
+    wis: t.number,
+  }),
+  t.partial({
+    actions: t.string,
+    armor: t.string,
+    page: t.number,
+    reactions: t.string,
+  }),
+]);
+export type NewCreature = t.TypeOf<typeof NewCreature>;

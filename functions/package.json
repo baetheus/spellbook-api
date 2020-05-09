@@ -14,15 +14,18 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-pino-logger": "^5.0.0",
     "firebase-admin": "^8.11.0",
     "firebase-functions": "^3.6.1",
     "fp-ts": "^2.5.4",
     "hyper-ts": "^0.5.3",
-    "io-ts": "^2.2.1"
+    "io-ts": "^2.2.1",
+    "io-ts-reporters": "^1.0.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.6",
     "@types/express-pino-logger": "^4.0.2",
     "firebase-functions-test": "^0.2.0",
     "tslint": "^5.12.0",
